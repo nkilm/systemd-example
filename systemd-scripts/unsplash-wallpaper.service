@@ -1,0 +1,10 @@
+[Unit]
+Description=Unsplash Dynamic Wallpaper
+
+[Service]
+ExecStart=/home/nkilm/projects/wallpaper-daemon/venv/bin/python /home/nkilm/projects/wallpaper-daemon/unsplash_wallpaper.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
