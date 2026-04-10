@@ -1,7 +1,7 @@
 {
-  "query": "milkyway, night, stars",
-  "interval": 10,
+  "queries": ["japan"],
+  "interval": 5,
   "resolution": "1920x1080",
-  "history_size": 20,
-  "save_dir": "/home/nkilm/projects/wallpaper-daemon/history"
+  "history_size": 200,
+  "save_dir": "/mnt/stuff/Wallpapers/unsplash"
 }

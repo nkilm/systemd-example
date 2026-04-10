@@ -3,6 +3,7 @@
 from pathlib import Path
 import time
 import requests
+import random
 import subprocess
 import json
 import os
@@ -53,12 +54,37 @@ def resize_to_target(path: Path, resolution: str):
     img.save(path, quality=95)
 
 
+def get_random_query(config):
+    queries = config.get("queries")
+    if queries is None:
+        query_value = config.get("query", "")
+        if isinstance(query_value, str) and "," in query_value:
+            queries = [q.strip() for q in query_value.split(",") if q.strip()]
+        elif isinstance(query_value, str) and query_value.strip():
+            queries = [query_value.strip()]
+        else:
+            raise ValueError("Config must include 'queries' or 'query'")
+    elif isinstance(queries, str):
+        queries = [q.strip() for q in queries.split(",") if q.strip()]
+    elif not isinstance(queries, list):
+        raise ValueError("Config 'queries' must be a list or comma-separated string")
+
+    if not queries:
+        raise ValueError("No valid query values found in config")
+
+    return random.choice(queries)
+
+
 def fetch_wallpaper(query: str, api_key: str, resolution: str):
     logging.info(f"Fetching wallpaper | query='{query}'")
 
     url = "https://api.unsplash.com/photos/random"
 
-    headers = {"Authorization": f"Client-ID {api_key}"}
+    headers = {
+        "Authorization": f"Client-ID {api_key}",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
 
     params = {"query": query, "orientation": "landscape"}
 
@@ -72,10 +98,14 @@ def fetch_wallpaper(query: str, api_key: str, resolution: str):
 
     # highest quality available
     image_url = data["urls"]["full"]
+    download_url = (
+        image_url + ("&" if "?" in image_url else "?") + f"r={int(time.time())}"
+    )
 
     logging.info("Downloading high-resolution image")
+    logging.debug(f"Download URL: {download_url}")
 
-    img_data = requests.get(image_url).content
+    img_data = requests.get(download_url).content
 
     with open(TEMP_PATH, "wb") as f:
         f.write(img_data)
@@ -152,9 +182,8 @@ def main():
                 last_mtime = mtime
                 logging.info("Config reloaded")
 
-            img_path = fetch_wallpaper(
-                config["query"], config["api_key"], config["resolution"]
-            )
+            query = get_random_query(config)
+            img_path = fetch_wallpaper(query, config["api_key"], config["resolution"])
 
             history_path = save_to_history(
                 img_path, os.path.expanduser(config["save_dir"])
